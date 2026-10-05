@@ -21,6 +21,12 @@ The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD
 NOT, RECOMMENDED, MAY, and OPTIONAL in this document are to be interpreted
 as described in RFC 2119 and RFC 8174.
 
+Enforcement is by convention alone. No rule here is checked by the language
+or by a compiler, and none is expected to be. A convention may instead be
+checked in tests, to whatever depth a supporting base provides, and that
+checking is erased from the shipped artifact. This document names no such
+base and requires none.
+
 Every requirement is addressed to the engineer who writes or reviews the
 code. Where a rule is not self-evidently right, the criterion that produced
 it follows as **Rationale**. A rule whose criterion has been lost decays
@@ -38,6 +44,8 @@ decoration.
   construction.
 - Which parts of a module are public surface and which are maintenance
   surface.
+- What enforces a rule: convention, and optionally a checking base whose
+  checks are erased before the code ships.
 
 ## 3. Definitions
 
@@ -94,60 +102,74 @@ A member's level is the answer to one question: who may reach it.
 
 **Internal** — the private and protected levels together. Internal means the
 package is the limit of reach: an internal key is never carried by the
-package export, while an abstract key is. Both internal levels are keyed by a
-`Symbol`; an abstract member is keyed by a `Symbol` too, yet it is the
-contract surface, not an internal member.
+package export. Both internal levels are keyed by a `Symbol`; an abstract
+member is keyed by a `Symbol` too, yet it is the contract surface, not an
+internal member.
+
+**Exported** — the abstract level alone. An abstract key is carried by the
+package export, so the concrete can reach the members it must implement even
+from outside the package. No other level crosses the package boundary.
 
 ## 4. Subject Module Layout
 
 **LAY-1.** A module MUST define exactly one subject constructor.
 
-**LAY-2.** A module directory MUST contain `index.mjs` and `_Symbol.mjs`.
+**LAY-2.** A _subject directory_ MUST contain `index.mjs` and `_Symbol.mjs`.
 
-**LAY-3.** A module directory MUST contain exactly one of `_Abstract.mjs` and
-`_Concrete.mjs`. The two MUST NOT coexist in the same directory.
+**LAY-3.** A _subject directory_ MUST contain exactly one of `_Abstract.mjs` and
+`_Concrete.mjs`. The two MUST NOT coexist in the same directory. The kind of
+the subject follows from which file is present: `_Abstract.mjs` means an
+abstract subject, `_Concrete.mjs` means a concrete subject.
 
-**LAY-4.** A module directory MUST contain `_External.mjs` if and only if
+**LAY-4.** A _subject directory_ MUST contain `_External.mjs` if and only if
 the module borrows keys or tables owned by another module.
 
-**LAY-5.** A module directory MAY contain additional files, each owning one
-named concern — for example a parser, a checker, or an event vocabulary.
-Such a file MUST be declared outside the rules of this document, and the
-exemption MUST be recorded where the file lives.
+**LAY-5.** A _subject directory_ MAY contain additional files or directories,
+each owning one named concern. Such an element MUST be declared outside the
+rules of this document, and the exemption MUST be recorded where it lives.
 
 **LAY-6.** The directory path IS the namespace. Short names MUST NOT be made
 globally unique; the same name in two modules denotes two different things.
 
-**Rationale.** Local names stay short only if collisions are tolerated, and
-a collision is harmless when the path disambiguates it. Because the module
-is the namespace, a _symbol table_ MUST NOT limit its own key count.
+> **Rationale**
+> Local names stay short only if collisions are tolerated, and a collision is
+> harmless when the path disambiguates it. Because the module is the namespace,
+> a _symbol table_ MUST NOT limit its own key count.
 
 **LAY-7.** A derived constructor MUST be placed in a directory parallel to,
-and a sibling of, its abstract base's subject directory. It MUST NOT be
+and a sibling of, its abstract base's _subject directory_. It MUST NOT be
 nested inside that directory.
 
-**LAY-8.** Nesting downward inside a module directory MUST be reserved for
-constructors that are not in a derivation relation with the subject
-constructor — for example an abstract member of the subject constructor's
-own family.
+**LAY-8.** Nesting downward inside a _subject directory_ MUST be reserved for
+subjects that the outer one uses; a subject that the outer one does not use
+MUST NOT be placed inside its directory. Being used is necessary for nesting
+and not sufficient for it.
+
+> **Rationale**
+> The tree is read from the outside in: a directory states what it is about,
+> and everything below it is detail a reader may leave unread. Nesting by use is
+> what keeps each level answerable on its own, instead of unfolding every part
+> of the subject at the top.
 
 **LAY-9.** Single-file exception (**provisional**). A module MAY be one
-`PascalCase.mjs` file placed beside the subject directories, if and only if
+`PascalCase.mjs` file placed beside the _subject directories_, if and only if
 all three of the following hold: nothing derives from it, it owns no key,
 and it needs no independent subject export. Owning even one key
 disqualifies it.
 
-**Rationale.** The three conditions are exactly the parts that a directory
-would add. The exception trades structure for readability, so it MUST NOT be
-granted to a module that has any of them.
+> **Rationale**
+> The three conditions are exactly the parts that a directory would add. The
+> exception trades structure for readability, so it MUST NOT be granted to a
+> module that has any of them.
 
 **LAY-10.** A filename that begins with `_` is a reserved file of this
 document. Its name is fixed and MUST NOT be replaced: the author does not
 choose it.
 
-**Rationale.** `index.mjs` carries no mark because the platform, not this
-document, fixes its name; the single file of the exception carries none
-because its author names it.
+> **Rationale**
+> `index.mjs` carries no mark because the platform, not this document, fixes
+> its name; the single file of the exception carries none because its author
+> names it.
 
 ## 5. Symbol System
 
@@ -177,6 +199,11 @@ all of its readers.
 currently contains `CTOR` and nothing else; adding an entry is a change to
 this document.
 
+> **Rationale**
+> Directory structure does not shorten a name, so abbreviations are needed; an
+> open set is a private cipher. A closed set is what lets every reader learn it
+> once.
+
 **SYM-8.** An exported table MUST be frozen, recursively, before it leaves
 the module.
 
@@ -203,9 +230,10 @@ name instead of being aliased.
 expression it replaces. Between two qualifying forms, prefer the one with
 the smaller product of name length and number of consumption sites.
 
-**Rationale.** The criterion is deliberately quantitative. It is what
-rejects an alias that is longer than its original, and what keeps an alias
-from being applied to a name that is used once.
+> **Rationale**
+> The criterion is deliberately quantitative. It is what rejects an alias that
+> is longer than its original, and what keeps an alias from being applied to a
+> name that is used once.
 
 **ALI-4.** A module MUST obtain every own key from its own `./_Symbol.mjs`
 and every borrowed table from its own `./_External.mjs`. A direct import of
@@ -219,10 +247,11 @@ key itself.
 defines and references nothing; every upward reference MUST be made in
 `_External.mjs`.
 
-**Rationale.** The leaf property is what makes a cycle structurally
-impossible rather than merely avoided. A module that reaches upward from its
-own _symbol table_ violates the property even when no cycle exists today,
-because the next borrowed table closes one.
+> **Rationale**
+> The leaf property is what makes a cycle structurally impossible rather than
+> merely avoided. A module that reaches upward from its own _symbol table_
+> violates the property even when no cycle exists today, because the next
+> borrowed table closes one.
 
 **ALI-7.** A symbol's descriptor and its alias key are two ledgers of the
 same fact. Renaming one without renaming the other MUST be treated as a
@@ -237,23 +266,14 @@ as abstract in prose MUST NOT be used as a substitute.
 **ABS-2.** Every abstract member MUST declare a contract for what it returns,
 including whether it MAY answer a promise.
 
-**ABS-3.** An abstract subject MUST NOT be checked at load time and MUST NOT
-block `extends` or any equivalent derivation. The check MUST happen lazily,
-on the first access of a member that has no implementation.
+**ABS-3.** The contract surface of a family is exactly its abstract members.
+Those members are the concrete's obligation; every other member in the
+module is maintenance surface.
 
-**ABS-4.** Where a hard constraint is required, it MUST be requested
-explicitly by wrapping the derived constructor, instead of relying on the
-lazy check. The lazy check and the hard constraint are two different
-guarantees and MUST NOT be conflated.
-
-**ABS-5.** The contract surface of a family is exactly its `_I` and `_S`
-members. Those members are the concrete's obligation; every other member in
-the module is maintenance surface.
-
-**ABS-6.** An abstract subject MUST NOT be constructible directly.
+**ABS-4.** An abstract subject MUST NOT be constructible directly.
 Constructing it MUST fail.
 
-**ABS-7.** A derived constructor MAY be produced without `class` and
+**ABS-5.** A derived constructor MAY be produced without `class` and
 `extends` syntax, by any means that yields the same derivation relation.
 Doing so is permitted and does not conflict with the purpose of this
 specification, but it is not RECOMMENDED: it is laborious to write and to
@@ -261,14 +281,17 @@ read. The RECOMMENDED form is `class ... extends`.
 
 ## 8. Construction
 
-**CTR-1.** A constructor MUST capture the construction target with
-`new.target` and store it in the shared constructor key. It MUST NOT read
-`this.constructor`.
+**CTR-1.** A constructor that needs the construction target MUST capture it
+with `new.target`, and MUST NOT read `this.constructor`. Which member holds
+the captured target is not fixed by this document.
 
-**Rationale.** Static strategy hooks are resolved against the captured
-construction target, so the mapping is fixed once, at construction time.
-`this.constructor` is a property lookup on an instance and can be shadowed,
-so it MUST NOT be used as a substitute.
+> **Rationale**
+> The target is a fact about one moment, the call that built the object, and
+> `new.target` is the only expression that reports it at that moment.
+> `this.constructor` is a property lookup that any assignment can shadow, so it
+> reports what the prototype chain says rather than what ran. An internal member
+> is a safe home for the reference because it is not carried by the package
+> export.
 
 **CTR-2.** A constructor MUST accept the smallest argument set that is
 stable for the whole family. A secondary dependency MUST NOT be added as a
@@ -278,29 +301,15 @@ further constructor argument.
 attached through an explicit protected member before the object is reachable
 from the public surface.
 
-**CTR-4.** A static normalisation hook MUST be a method. It MUST NOT be a
-getter whose value is the normalised result.
-
-**Rationale.** The framework invokes hooks as calls. A getter answers a
-value, so answering an array where a function is expected fails at the call
-site.
-
-**CTR-5.** A family whose constructor takes no argument MUST answer an empty
-argument list from its parameter hook, so that no argument set need be
-attached.
-
-**CTR-6.** A value that a caller may change later MUST have exactly one write
-point, and that write point MUST NOT be the constructor. A constructor MUST
-NOT duplicate a value that the configuration surface already owns.
-
-**CTR-7.** A guard MUST be justified by a reachable state, not by caution.
+**CTR-4.** A guard MUST be justified by a reachable state, not by caution.
 Where an operation is single-shot because its only caller is single-shot,
 the guard MUST NOT be added; where the set of callers is not closed, the
 guard MUST be.
 
-**Rationale.** An unreachable guard is a dead branch, and a dead branch
-survives review as if it were protection. The criterion for adding one is
-therefore the caller set, not the risk.
+> **Rationale**
+> An unreachable guard is a dead branch, and a dead branch survives review as
+> if it were protection. The criterion for adding one is therefore the caller
+> set, not the risk.
 
 ## 9. Public Surface
 
@@ -310,7 +319,7 @@ or _borrowing table_ MUST NOT be carried by it.
 
 **PUB-2.** A member that the concrete must read or write beyond the abstract
 contract MUST be exposed through the package export as a grouped symbol
-namespace containing `_I` and `_S` only.
+namespace containing abstract keys only.
 
 **PUB-3.** The _alias tables_ MUST NOT be reachable from the package export.
 
@@ -318,9 +327,10 @@ namespace containing `_I` and `_S` only.
 can provide, promoting the capability to a public member SHOULD be preferred
 over exposing the internal member.
 
-**Rationale.** Symbols are the maintenance surface; public members are the
-promise surface. Exposing an internal member converts an internal change into
-a breaking change.
+> **Rationale**
+> Symbols are the maintenance surface; public members are the promise surface.
+> Exposing an internal member converts an internal change into a breaking
+> change.
 
 ## 10. Naming
 
@@ -353,8 +363,6 @@ member declares a contract; every borrowed table is re-exported from
 
 ## 12. Open Questions
 
-- The abbreviation whitelist holds one entry. Whether it SHOULD stay closed
-  at that size, or grow a fixed set, is not settled.
 - The single-file exception has a three-condition criterion but no threshold
   for "extreme simplification". Whether the criterion is sufficient, or
   needs a stated maximum size, is not settled.
