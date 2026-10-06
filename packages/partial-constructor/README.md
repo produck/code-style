@@ -183,11 +183,7 @@ choose it. The reserved files are:
 **SYM-1.** An internal member key MUST be a `Symbol`, and MUST NOT be a
 string.
 
-**SYM-2.** A symbol MUST be defined in the `_Symbol.mjs` of the module that
-owns it. That definition is the single source of truth for its meaning, and
-every reference MUST resolve to it.
-
-**SYM-3.** A `Symbol` key MUST be assigned one of the three levels below.
+**SYM-2.** A `Symbol` key MUST be assigned one of the three levels below.
 
 | Level     | Descriptor | Instance table | Static table |
 | --------- | ---------- | -------------- | ------------ |
@@ -195,10 +191,14 @@ every reference MUST resolve to it.
 | protected | `.$name`   | `$I`           | `$S`         |
 | abstract  | `._name`   | `_I`           | `_S`         |
 
-**SYM-4.** A `Symbol` key MUST be given the narrowest level that satisfies
+**SYM-3.** A `Symbol` key MUST be given the narrowest level that satisfies
 all of its readers.
 
-**SYM-5.** A method symbol MUST end with `()`; a field symbol MUST NOT.
+**SYM-4.** A method symbol MUST end with `()`; a field symbol MUST NOT.
+
+**SYM-5.** Every segment of a `Symbol` consumption expression MUST be written
+in all uppercase, with words separated by `_`. A segment MAY be abbreviated
+only through the closed whitelist.
 
 **SYM-6.** A `Symbol` key that holds a constructor MUST end with `_CTOR`.
 
@@ -211,7 +211,47 @@ this document.
 > open set is a private cipher. A closed set is what lets every reader learn it
 > once.
 
-**SYM-8.** An exported table MAY be frozen, recursively, before it leaves the
+**SYM-8.** Inside a table, an author MAY nest namespaces freely in order to
+group keys by category, and the category vocabulary is not fixed by this
+document. Only a leaf is a key; every node above it is a namespace.
+
+**SYM-9.** Only the module that owns a key may declare it. A derived
+constructor MAY override a protected member declared within its own family.
+A member reached from outside the package MUST be public or abstract.
+
+**SYM-10.** A symbol's descriptor and its alias key are two ledgers of the
+same fact. Renaming one without renaming the other MUST be treated as a
+defect.
+
+**SYM-11.** An alias is evaluated after the fact: it is justified when the full
+expression would otherwise break a coding convention (the line width among
+them), and when every reference resolves to the key it names. Whether to set
+one is not settled in advance; aliases are appended as the need appears.
+
+> **Rationale**
+> The question an alias answers is not how much it saves, but whether the code
+> can be written within the conventions it must meet at all. It is therefore
+> judged where it is used, not approved where it is declared.
+
+**SYM-12.** An alias is an alternative to the full expression, not a
+replacement for it: the site that reads a key MAY use either, as it needs.
+
+## 6. Symbol Table
+
+**STB-1.** A symbol MUST be defined in the `_Symbol.mjs` of the module that
+owns it. That definition is the single source of truth for its meaning, and
+every reference MUST resolve to it.
+
+**STB-2.** `_Symbol.mjs` MUST NOT export a top-level space other than the six
+tables of SYM-2 and `A`.
+
+**STB-3.** `_Symbol.mjs` MUST be a pure leaf. It MUST NOT import a module of
+the same package, and it MUST NOT reference another _symbol table_, in any
+package; every reference to a key that another module owns MUST be made in
+`_External.mjs`. A helper MAY be imported; a helper is a function, not a key
+or a table.
+
+**STB-4.** An exported table MAY be frozen, recursively, before it leaves the
 module.
 
 > **Rationale**
@@ -220,53 +260,28 @@ module.
 > failing assignment. The cost is a recursive freeze at definition time and the
 > helper it needs imported into `_Symbol.mjs`.
 
-**SYM-9.** `_Symbol.mjs` MUST be a pure leaf. It MUST NOT import a module of
-the same package, and it MUST NOT reference another _symbol table_, in any
-package; every reference to a key that another module owns MUST be made in
-`_External.mjs`. A helper MAY be imported; a helper is a function, not a key
-or a table.
-
-**SYM-10.** Only the module that owns a key may declare it. A derived
-constructor MAY override a protected member declared within its own family.
-A member reached from outside the package MUST be public or abstract.
-
-**SYM-11.** `_Symbol.mjs` MUST NOT export a top-level space other than the six
-tables of SYM-3 and `A`.
-
-**SYM-12.** Inside one of those spaces, an author MAY nest namespaces freely
-in order to group keys by category, and the category vocabulary is not fixed
-by this document. Only a leaf is a key; every node above it is a namespace.
-
-## 6. Aliases and the Reference Graph
-
-**ALI-1.** A module that owns keys SHOULD export an _alias table_ `A` from
+**STB-5.** A module that owns keys SHOULD export an _alias table_ `A` from
 `_Symbol.mjs`. `A` MUST contain only that module's own keys.
 
-**ALI-2.** A module that borrows SHOULD export a _borrowed alias table_ `_A`
+**STB-6.** The structure of `A` is not required to match the paths of the
+keys it aliases.
+
+## 7. External Table
+
+**ETB-1.** A module that borrows SHOULD export a _borrowed alias table_ `_A`
 from `_External.mjs`. `_A` MUST contain only the tables the module borrows
 directly. A borrowed table whose name is already short MUST be imported by
 name instead of being aliased.
 
-**ALI-3.** An alias MUST NOT be introduced unless it is shorter than the
-expression it replaces. Between two qualifying forms, prefer the one with
-the smaller product of name length and number of consumption sites.
+**ETB-2.** A module MUST take every key it owns through its own
+`./_Symbol.mjs`, and every key it borrows through its own `./_External.mjs`.
+An import of another module's `_Symbol.mjs` MUST be written in the importing
+module's own `_External.mjs` and nowhere else, and the table so imported MUST
+be re-exported from that file. Another module's `_External.mjs` MUST NOT be
+imported.
 
-> **Rationale**
-> The criterion is deliberately quantitative. It is what rejects an alias that
-> is longer than its original, and what keeps an alias from being applied to a
-> name that is used once.
-
-**ALI-4.** A module MUST obtain every own key from its own `./_Symbol.mjs`
-and every borrowed table from its own `./_External.mjs`. A direct import of
-another module's `_Symbol.mjs` MUST be confined to `_External.mjs`.
-
-**ALI-5.** `A` and `_A` MUST be applied at the definition site as well: once
-a key has an alias, the owning module MUST use the alias when it reads the
-key itself.
-
-**ALI-6.** The package's reference graph MUST be acyclic. `_Symbol.mjs`
-references nothing in the package; every upward reference MUST be made in
-`_External.mjs`.
+**ETB-3.** The package's reference graph MUST be acyclic, and every upward
+reference MUST be made in `_External.mjs`.
 
 > **Rationale**
 > The leaf property is what makes a cycle structurally impossible rather than
@@ -274,14 +289,7 @@ references nothing in the package; every upward reference MUST be made in
 > violates the property even when no cycle exists today, because the next
 > borrowed table closes one.
 
-**ALI-7.** A symbol's descriptor and its alias key are two ledgers of the
-same fact. Renaming one without renaming the other MUST be treated as a
-defect.
-
-**ALI-8.** The structure of `A` is not required to match the paths of the
-keys it aliases.
-
-## 7. Abstract and Concrete
+## 8. Abstract and Concrete
 
 **ABS-1.** A constructor that a downstream author is expected to derive from
 MUST be declared abstract through the shared abstract layer. Documenting it
@@ -303,7 +311,7 @@ Doing so is permitted and does not conflict with the purpose of this
 specification, but it is not RECOMMENDED: it is laborious to write and to
 read. The RECOMMENDED form is `class ... extends`.
 
-## 8. Construction
+## 9. Construction
 
 **CTR-1.** A constructor that needs the construction target MUST capture it
 with `new.target`, and MUST NOT read `this.constructor`. Which member holds
@@ -335,7 +343,7 @@ guard MUST be.
 > if it were protection. The criterion for adding one is therefore the caller
 > set, not the risk.
 
-## 9. Public Surface
+## 10. Public Surface
 
 **PUB-1.** The package export MUST be the only export space of a package, and
 everything a consumer may reach MUST be organized there. A raw _symbol table_
@@ -356,7 +364,7 @@ over exposing the internal member.
 > Exposing an internal member converts an internal change into a breaking
 > change.
 
-## 10. Subject Export
+## 11. Subject Export
 
 **SUB-1.** A subject export MUST carry the subject constructor, as `Abstract`
 when the subject is abstract and as `Concrete` when it is concrete.
@@ -370,7 +378,7 @@ export as a namespace under that subject's own name.
 **SUB-4.** A subject export MAY carry anything else, provided that no other
 export takes the name `Abstract` or `Concrete`.
 
-## 11. Naming
+## 12. Naming
 
 **NAM-1.** A name MUST be checked against the mainstream practice of its
 domain before it is adopted. A name that is defensible only inside this
@@ -391,7 +399,7 @@ hook that the framework reads MUST be named as a noun phrase.
 glossary, one entry per term, stating the distinction that makes the term
 necessary.
 
-## 12. Conformance
+## 13. Conformance
 
 **CON-1.** A package conforms only if all of the following hold: its
 reference graph is acyclic; every subject export carries its subject
@@ -399,10 +407,10 @@ constructor; no _symbol table_ imports anything else from the package; every
 abstract member declares a contract; every borrowed table is re-exported from
 `_External.mjs`.
 
-## 13. Open Questions
+## 14. Open Questions
 
 - The single-file exception has a three-condition criterion but no threshold
   for "extreme simplification". Whether the criterion is sufficient, or
   needs a stated maximum size, is not settled.
-- The alias criterion is quantitative, but the boundary between "many
-  consumption sites" and "few" is left to review.
+- Which coding conventions can justify an alias is not enumerated, and where
+  the boundary lies is left to review.
