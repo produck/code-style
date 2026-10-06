@@ -164,7 +164,14 @@ disqualifies it.
 
 **LAY-10.** A filename that begins with `_` is a reserved file of this
 document. Its name is fixed and MUST NOT be replaced: the author does not
-choose it.
+choose it. The reserved files are:
+
+| File            | Carries               | Rule  |
+| --------------- | --------------------- | ----- |
+| `_Symbol.mjs`   | the _symbol table_    | LAY-2 |
+| `_Abstract.mjs` | the abstract subject  | LAY-3 |
+| `_Concrete.mjs` | the concrete subject  | LAY-3 |
+| `_External.mjs` | the _borrowing table_ | LAY-4 |
 
 > **Rationale**
 > `index.mjs` carries no mark because the platform, not this document, fixes
@@ -204,17 +211,31 @@ this document.
 > open set is a private cipher. A closed set is what lets every reader learn it
 > once.
 
-**SYM-8.** An exported table MUST be frozen, recursively, before it leaves
-the module.
+**SYM-8.** An exported table MAY be frozen, recursively, before it leaves the
+module.
 
-**SYM-9.** `_Symbol.mjs` MUST be a pure leaf. It MUST NOT import any module
-of the same package; it MAY import a third-party helper.
+> **Rationale**
+> The tables are shared objects once they leave the module, so a stray write
+> would add a key to every reader's view; freezing turns that write into a
+> failing assignment. The cost is a recursive freeze at definition time and the
+> helper it needs imported into `_Symbol.mjs`.
+
+**SYM-9.** `_Symbol.mjs` MUST be a pure leaf. It MUST NOT import a module of
+the same package, and it MUST NOT reference another _symbol table_, in any
+package; every reference to a key that another module owns MUST be made in
+`_External.mjs`. A helper MAY be imported; a helper is a function, not a key
+or a table.
 
 **SYM-10.** Only the module that owns a key may declare it. A derived
 constructor MAY override a protected member declared within its own family.
 A member reached from outside the package MUST be public or abstract.
 
-**SYM-11.** A subject export MUST NOT carry a _symbol table_.
+**SYM-11.** `_Symbol.mjs` MUST NOT export a top-level space other than the six
+tables of SYM-3 and `A`.
+
+**SYM-12.** Inside one of those spaces, an author MAY nest namespaces freely
+in order to group keys by category, and the category vocabulary is not fixed
+by this document. Only a leaf is a key; every node above it is a namespace.
 
 ## 6. Aliases and the Reference Graph
 
@@ -244,7 +265,7 @@ a key has an alias, the owning module MUST use the alias when it reads the
 key itself.
 
 **ALI-6.** The package's reference graph MUST be acyclic. `_Symbol.mjs`
-defines and references nothing; every upward reference MUST be made in
+references nothing in the package; every upward reference MUST be made in
 `_External.mjs`.
 
 > **Rationale**
@@ -256,6 +277,9 @@ defines and references nothing; every upward reference MUST be made in
 **ALI-7.** A symbol's descriptor and its alias key are two ledgers of the
 same fact. Renaming one without renaming the other MUST be treated as a
 defect.
+
+**ALI-8.** The structure of `A` is not required to match the paths of the
+keys it aliases.
 
 ## 7. Abstract and Concrete
 
@@ -332,7 +356,21 @@ over exposing the internal member.
 > Exposing an internal member converts an internal change into a breaking
 > change.
 
-## 10. Naming
+## 10. Subject Export
+
+**SUB-1.** A subject export MUST carry the subject constructor, as `Abstract`
+when the subject is abstract and as `Concrete` when it is concrete.
+
+**SUB-2.** A subject export MUST NOT carry a _symbol table_ or a _borrowing
+table_.
+
+**SUB-3.** A subject that the module uses MUST be carried by the subject
+export as a namespace under that subject's own name.
+
+**SUB-4.** A subject export MAY carry anything else, provided that no other
+export takes the name `Abstract` or `Concrete`.
+
+## 11. Naming
 
 **NAM-1.** A name MUST be checked against the mainstream practice of its
 domain before it is adopted. A name that is defensible only inside this
@@ -353,15 +391,15 @@ hook that the framework reads MUST be named as a noun phrase.
 glossary, one entry per term, stating the distinction that makes the term
 necessary.
 
-## 11. Conformance
+## 12. Conformance
 
 **CON-1.** A package conforms only if all of the following hold: its
-reference graph is acyclic; every subject export carries constructors only;
-no _symbol table_ imports anything else from the package; every abstract
-member declares a contract; every borrowed table is re-exported from
+reference graph is acyclic; every subject export carries its subject
+constructor; no _symbol table_ imports anything else from the package; every
+abstract member declares a contract; every borrowed table is re-exported from
 `_External.mjs`.
 
-## 12. Open Questions
+## 13. Open Questions
 
 - The single-file exception has a three-condition criterion but no threshold
   for "extreme simplification". Whether the criterion is sufficient, or
