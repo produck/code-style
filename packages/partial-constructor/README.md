@@ -34,6 +34,10 @@ it follows as **Rationale**. A rule whose criterion has been lost decays
 into folklore, so the criterion is normative context rather than
 decoration.
 
+Where a rule rests on a judgment that the code does not state, the question it
+rests on follows as **Boundary**. **Rationale** justifies a rule that is
+already made; **Boundary** is answered before the rule can be applied at all.
+
 ## 2. Scope
 
 A _constructor_ assembled in one file fails in a way that is easy to state and
@@ -67,6 +71,8 @@ It is written to the following aims:
 - A cycle is impossible by construction, not merely absent today.
 - A rule that can be decided from the layout is stated so that a check can
   decide it, and the check is erased before the code ships.
+- Where a rule cannot be checked, it is written as the question the engineer has
+  to answer, and the answer is the structure.
 
 ## 3. Definitions
 
@@ -81,7 +87,7 @@ marks; the count is zero for a term that no rule uses.
 
 ### Package
 
-**Package**<sup>10</sup> — the publishable unit that contains one or more
+**Package**<sup>15</sup> — the publishable unit that contains one or more
 modules. A constraint that no single module can satisfy alone is stated of the
 package.
 
@@ -90,23 +96,23 @@ package.
 
 ### Subject
 
-**Subject**<sup>16</sup> — the unit of design: one constructor, which the module
+**Subject**<sup>22</sup> — the unit of design: one constructor, which the module
 is dedicated to. A subject is either abstract or concrete.
 
-- **Subject constructor**<sup>10</sup> — the core layer: the subject as a
+- **Subject constructor**<sup>11</sup> — the core layer: the subject as a
   constructible value.
 - **Subject directory**<sup>16</sup> — the form layer: the directory that
   defines the subject constructor and every part of its assembly.
-- **Subject module**<sup>27</sup> — the synthesis layer: the subject
+- **Subject module**<sup>29</sup> — the synthesis layer: the subject
   constructor, its subject directory, and the other elements of the assembly,
   taken together.
 - **Subject export**<sup>4</sup> — `index.mjs`, the surface a module exposes to
   the rest of the package.
-- **Abstract**<sup>16</sup> — `_Abstract.mjs`, the abstract subject: it declares
+- **Abstract**<sup>17</sup> — `_Abstract.mjs`, the abstract subject: it declares
   the contract and is not itself constructible.
-- **Concrete**<sup>6</sup> — `_Concrete.mjs`, the concrete subject: a
+- **Concrete**<sup>8</sup> — `_Concrete.mjs`, the concrete subject: a
   constructible derivation of the abstract one.
-- **Derivation**<sup>6</sup> — a subject built on another subject's contract,
+- **Derivation**<sup>9</sup> — a subject built on another subject's contract,
   in the sense of `class ... extends`: it takes the abstract keys of that base
   as its obligation, and is either concrete, or abstract with that obligation
   not yet fully discharged.
@@ -128,7 +134,7 @@ is dedicated to. A subject is either abstract or concrete.
 **Consumption side**<sup>1</sup> — everything that reads a key, as opposed to
 the module that declares it.
 
-- **Consumer**<sup>4</sup> — the code that depends on a subject module, by
+- **Consumer**<sup>7</sup> — the code that depends on a subject module, by
   deriving from it or by using it.
 - **Consumption point**<sup>5</sup> — one place in the code that reads a key.
 - **Consumption expression**<sup>1</sup> — the expression written at such a
@@ -139,11 +145,11 @@ the module that declares it.
 A member's accessibility is the answer to one question: who may reach it. A
 member sits at exactly one of the levels below.
 
-- **Private**<sup>3</sup> — reached by the subject itself, and by nothing else.
-- **Protected**<sup>4</sup> — reached by any other subject in the package.
-- **Abstract member**<sup>6</sup> — reached by a derivation of the declaring
+- **Private**<sup>4</sup> — reached by the subject itself, and by nothing else.
+- **Protected**<sup>5</sup> — reached by any other subject in the package.
+- **Abstract member**<sup>9</sup> — reached by a derivation of the declaring
   subject.
-- **Public**<sup>4</sup> — reached by any consumer; the member is keyed by a
+- **Public**<sup>5</sup> — reached by any consumer; the member is keyed by a
   string, not a `Symbol`.
 
 **Internal**<sup>7</sup> — the private and protected levels together. Internal
@@ -245,6 +251,13 @@ are the _external_ ones.
 
 **SYM-3.** A `Symbol` key in a _symbol table_ MUST be given the narrowest level
 that satisfies all of its _consumption points_.
+
+> **Boundary**
+> The question is who reads the key. A key read only by the declaring
+> _subject_ is _private_; one read by its siblings in the _package_ is
+> _protected_; one a _derivation_ must implement is an _abstract member_; and
+> one read outside the _package_ is _public_. The engineer does not pick a
+> level here: the reading has already picked it.
 
 **SYM-4.** A _member_ that the _consumption side_ outside the _package_ uses
 MUST be _external_.
@@ -364,12 +377,25 @@ reference MUST be made in `_Borrow.mjs`.
 MUST be declared _abstract_ through the shared _abstract_ layer. Documenting it
 as _abstract_ in prose MUST NOT be used as a substitute.
 
+> **Boundary**
+> The question is whether others are expected to build on this _constructor_ or
+> only to use it. If a _consumer_ is expected to _derive_ from it, what the
+> outside is given is the _abstract_ layer, and the _module_ keeps its own
+> _concrete_ choice free to change. If nothing derives from it, the layer
+> carries no promise and the _subject_ is one thing.
+
 **ABS-2.** Every _abstract member_ MUST declare a contract for what it
 returns, including whether it MAY answer a promise.
 
 **ABS-3.** The contract surface of a family is exactly its
 _abstract members_. A _derivation_ takes them on as an obligation; every
 other _member_ in the _module_ is maintenance surface.
+
+> **Boundary**
+> The question is what the family promises. Anything a _derivation_ must
+> honour is an _abstract member_: it keeps its name across every _concrete_
+> _subject_ that follows. Everything else in the _module_ may move, so it
+> belongs on the maintenance side of the line.
 
 **ABS-4.** A _constructor_ with an unimplemented _abstract member_ MUST be
 _abstract_ itself.
@@ -427,6 +453,13 @@ Everything a _consumer_ may reach MUST be organized there.
 the _abstract members_ that a _derivation_ outside the _package_ must implement
 MUST be carried by the _package export_ as well.
 
+> **Boundary**
+> The question is what the outside has to implement. A _derivation_ outside the
+> _package_ cannot invent a key, so the only keys it can honour are the ones it
+> is handed; every _abstract member_ of that kind forces its `Symbol` across
+> the boundary, and the export is where that crossing is declared. Members the
+> outside never implements stay where they are.
+
 **PUB-3.** A raw _symbol table_, a _borrowing table_, and an _alias table_ MUST
 NOT be reachable from the _package export_.
 
@@ -443,8 +476,16 @@ _concrete_.
 **SUB-2.** A _subject export_ MUST NOT carry a _symbol table_ or a
 _borrowing table_.
 
-**SUB-3.** A _subject_ that the _module_ uses MUST be carried by the
-_subject export_ as a namespace under that _subject_'s own name.
+**SUB-3.** A _subject_ MUST be carried by the _subject export_, as a namespace
+under that _subject_'s own name, if and only if a _consumer_ outside the
+_package_ is expected to reach it.
+
+> **Boundary**
+> The question is whether the outside must reach this _subject_ at all. A
+> _subject_ the _module_ keeps for itself stays inside: carrying it would read
+> as a promise, and every later change to it would break a _consumer_ that had
+> no business knowing. A _subject_ the outside is expected to reach is carried
+> under its own name, which is also the path the _package_ export takes to it.
 
 **SUB-4.** A _subject export_ MAY carry anything else, provided that no other
 export takes the name `Abstract` or `Concrete`.
