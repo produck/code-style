@@ -73,7 +73,7 @@ package.
 **Subject**<sup>14</sup> — the unit of design: one constructor, which the module
 is dedicated to. A subject is either abstract or concrete.
 
-- **Subject constructor**<sup>12</sup> — the core layer: the subject as a
+- **Subject constructor**<sup>10</sup> — the core layer: the subject as a
   constructible value.
 - **Subject directory**<sup>15</sup> — the form layer: the directory that
   defines the subject constructor and every part of its assembly.
@@ -92,7 +92,7 @@ is dedicated to. A subject is either abstract or concrete.
   not yet fully discharged.
 - **Symbol table**<sup>7</sup> — `_Symbol.mjs`, the one place where a module
   defines its own member keys.
-- **Subject member**<sup>12</sup> — one member of a subject, reached through one
+- **Subject member**<sup>13</sup> — one member of a subject, reached through one
   key: a string when the member is public, a `Symbol` otherwise.
 - **Alias table**<sup>2</sup> — `A`, short names for the module's own keys.
 - **Borrowing table**<sup>3</sup> — `_External.mjs`, the one place where a
@@ -117,10 +117,10 @@ A member's accessibility is the answer to one question: who may reach it. A
 member sits at exactly one of the levels below.
 
 - **Private**<sup>2</sup> — reached by the subject itself, and by nothing else.
-- **Protected**<sup>4</sup> — reached by any other subject in the package.
+- **Protected**<sup>3</sup> — reached by any other subject in the package.
 - **Abstract member**<sup>6</sup> — reached by a derivation of the declaring
   subject.
-- **Public**<sup>6</sup> — reached by any consumer; the member is keyed by a
+- **Public**<sup>5</sup> — reached by any consumer; the member is keyed by a
   string, not a `Symbol`.
 
 **Internal**<sup>7</sup> — the private and protected levels together. Internal
@@ -370,9 +370,10 @@ read. The RECOMMENDED form is `class ... extends`.
 
 ## 9. Construction
 
-**CTR-1.** A _constructor_ that needs the construction target MUST capture it
-with `new.target`, and MUST NOT read `this.constructor`. Which _member_ holds
-the captured target is not fixed by this document.
+**CTR-1.** A _constructor_ whose instance-level _members_ call a static _member_
+of the actual construction target MUST capture that target with `new.target`,
+and MUST NOT read `this.constructor`. Which _member_ holds the captured target
+is not fixed by this document.
 
 > **Rationale**
 > The target is a fact about one moment, the call that built the object, and
@@ -382,23 +383,8 @@ the captured target is not fixed by this document.
 > _member_ is a safe home for the reference because it is not carried by the
 > _package_ export.
 
-**CTR-2.** A _constructor_ MUST accept the smallest argument set that is
-stable for the whole family. A secondary dependency MUST NOT be added as a
-further _constructor_ argument.
-
-**CTR-3.** A dependency that cannot be passed to the _constructor_ MUST be
-attached through an explicit _protected_ _member_ before the object is reachable
-from the _public_ surface.
-
-**CTR-4.** A guard MUST be justified by a reachable state, not by caution.
-Where an operation is single-shot because its only caller is single-shot,
-the guard MUST NOT be added; where the set of callers is not closed, the
-guard MUST be.
-
-> **Rationale**
-> An unreachable guard is a dead branch, and a dead branch survives review as
-> if it were protection. The criterion for adding one is therefore the caller
-> set, not the risk.
+**CTR-2.** A dependency MUST be ready before the object is used for the first
+time, whether the _constructor_ received it or it was attached afterwards.
 
 ## 10. Public Surface
 
