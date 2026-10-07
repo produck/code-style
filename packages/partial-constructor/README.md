@@ -91,7 +91,8 @@ marks; the count is zero for a term that no rule uses.
 modules. A constraint that no single module can satisfy alone is stated of the
 package.
 
-- **Package export**<sup>5</sup> — the surface a package exposes to its
+- **Package export**<sup>6</sup> — the file `package.json` names as the package
+  entry, under `main` or `exports["."]`: the surface a package exposes to its
   consumers.
 
 ### Subject
@@ -103,7 +104,7 @@ is dedicated to. A subject is either abstract or concrete.
   constructible value.
 - **Subject directory**<sup>16</sup> — the form layer: the directory that
   defines the subject constructor and every part of its assembly.
-- **Subject module**<sup>29</sup> — the synthesis layer: the subject
+- **Subject module**<sup>31</sup> — the synthesis layer: the subject
   constructor, its subject directory, and the other elements of the assembly,
   taken together.
 - **Subject export**<sup>4</sup> — `index.mjs`, the surface a module exposes to
@@ -460,12 +461,16 @@ MUST be carried by the _package export_ as well.
 > the boundary, and the export is where that crossing is declared. Members the
 > outside never implements stay where they are.
 
-**PUB-3.** A raw _symbol table_, a _borrowing table_, and an _alias table_ MUST
-NOT be reachable from the _package export_.
+**PUB-3.** A _symbol table_, a _borrowing table_, and an _alias table_ MUST NOT
+be reachable from the _package export_ as a whole. What crosses is a selection:
+the leaves PUB-2 requires, picked from the table that defines each and
+rearranged under the export's own names.
 
 **PUB-4.** Beyond that, what the _package export_ carries and in what form is
 not fixed by this document. Keys MAY be grouped or left flat, and an export MAY
-be added for any element the _package_ needs.
+be added for any element the _package_ needs. The _package export_ is not a
+_module_: it gathers the keys PUB-2 requires from several _modules_, so no
+`_Borrow.mjs` is expected of it.
 
 ## 11. Subject Export
 
