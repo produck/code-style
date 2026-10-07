@@ -61,16 +61,16 @@ marks; the count is zero for a term that no rule uses.
 
 ### Package
 
-**Package**<sup>14</sup> — the publishable unit that contains one or more
+**Package**<sup>15</sup> — the publishable unit that contains one or more
 modules. A constraint that no single module can satisfy alone is stated of the
 package.
 
-- **Package export**<sup>3</sup> — the surface a package exposes to its
+- **Package export**<sup>5</sup> — the surface a package exposes to its
   consumers.
 
 ### Subject
 
-**Subject**<sup>14</sup> — the unit of design: one constructor, which the module
+**Subject**<sup>15</sup> — the unit of design: one constructor, which the module
 is dedicated to. A subject is either abstract or concrete.
 
 - **Subject constructor**<sup>10</sup> — the core layer: the subject as a
@@ -82,9 +82,9 @@ is dedicated to. A subject is either abstract or concrete.
   taken together.
 - **Subject export**<sup>6</sup> — `index.mjs`, the surface a module exposes to
   the rest of the package.
-- **Abstract**<sup>19</sup> — `_Abstract.mjs`, the abstract subject: it declares
+- **Abstract**<sup>16</sup> — `_Abstract.mjs`, the abstract subject: it declares
   the contract and is not itself constructible.
-- **Concrete**<sup>8</sup> — `_Concrete.mjs`, the concrete subject: a
+- **Concrete**<sup>6</sup> — `_Concrete.mjs`, the concrete subject: a
   constructible derivation of the abstract one.
 - **Derivation**<sup>6</sup> — a subject built on another subject's contract,
   in the sense of `class ... extends`: it takes the abstract keys of that base
@@ -92,17 +92,17 @@ is dedicated to. A subject is either abstract or concrete.
   not yet fully discharged.
 - **Symbol table**<sup>7</sup> — `_Symbol.mjs`, the one place where a module
   defines its own member keys.
-- **Subject member**<sup>13</sup> — one member of a subject, reached through one
+- **Subject member**<sup>9</sup> — one member of a subject, reached through one
   key: a string when the member is public, a `Symbol` otherwise.
 - **Alias table**<sup>2</sup> — `A`, short names for the module's own keys.
-- **Borrowing table**<sup>3</sup> — `_External.mjs`, the one place where a
+- **Borrowing table**<sup>3</sup> — `_Borrow.mjs`, the one place where a
   module imports keys that other modules own.
 - **Borrowed alias table**<sup>1</sup> — `_A`, short names for the borrowed
   tables.
 
 ### Consumption
 
-**Consumption side**<sup>0</sup> — everything that reads a key, as opposed to
+**Consumption side**<sup>1</sup> — everything that reads a key, as opposed to
 the module that declares it.
 
 - **Consumer**<sup>3</sup> — the code that depends on a subject module, by
@@ -116,18 +116,24 @@ the module that declares it.
 A member's accessibility is the answer to one question: who may reach it. A
 member sits at exactly one of the levels below.
 
-- **Private**<sup>2</sup> — reached by the subject itself, and by nothing else.
-- **Protected**<sup>3</sup> — reached by any other subject in the package.
+- **Private**<sup>3</sup> — reached by the subject itself, and by nothing else.
+- **Protected**<sup>4</sup> — reached by any other subject in the package.
 - **Abstract member**<sup>6</sup> — reached by a derivation of the declaring
   subject.
-- **Public**<sup>5</sup> — reached by any consumer; the member is keyed by a
+- **Public**<sup>4</sup> — reached by any consumer; the member is keyed by a
   string, not a `Symbol`.
 
-**Internal**<sup>7</sup> — the private and protected levels together. Internal
+**Internal**<sup>6</sup> — the private and protected levels together. Internal
 means the package is the limit of reach: an internal key is never carried by the
 package export. Both internal levels are keyed by a `Symbol`; an abstract member
-is keyed by a `Symbol` too, yet it is the contract surface, not an internal
-member.
+is keyed by a `Symbol` too, yet it belongs with a public member on the external
+side.
+
+**External**<sup>2</sup> — the public and abstract levels together. External
+means reach is not limited by the package: a consumer outside the package may
+reach either level. A public member is keyed by a string and an abstract member
+by a `Symbol`, which is what lets that key reach the derivation outside the
+package that must implement it.
 
 ## 4. Subject Module Layout
 
@@ -140,7 +146,7 @@ member.
 the _subject_ follows from which file is present: `_Abstract.mjs` means an
 _abstract_ _subject_, `_Concrete.mjs` means a _concrete_ _subject_.
 
-**LAY-4.** A _subject directory_ MUST contain `_External.mjs` if and only if
+**LAY-4.** A _subject directory_ MUST contain `_Borrow.mjs` if and only if
 the _module_ borrows keys or tables owned by another _module_.
 
 **LAY-5.** A _subject directory_ MAY contain additional files or directories,
@@ -190,7 +196,7 @@ choose it. The reserved files are:
 | `_Symbol.mjs`   | the _symbol table_       | LAY-2 |
 | `_Abstract.mjs` | the _abstract_ _subject_ | LAY-3 |
 | `_Concrete.mjs` | the _concrete_ _subject_ | LAY-3 |
-| `_External.mjs` | the _borrowing table_    | LAY-4 |
+| `_Borrow.mjs`   | the _borrowing table_    | LAY-4 |
 
 > **Rationale**
 > `index.mjs` carries no mark because the platform, not this document, fixes
@@ -220,18 +226,29 @@ Who may reach a member at each level:
 | _abstract_  | `Symbol('._name')` | a derivation of the declaring subject |
 | _public_    | `'name'`           | any consumer                          |
 
+_Private_ and _protected_ are the _internal_ levels; _abstract_ and _public_
+are the _external_ ones.
+
 **SYM-3.** A `Symbol` key MUST be given the narrowest level that satisfies
 all of its _consumption points_.
 
-**SYM-4.** A method symbol MUST end with `()`; a field symbol MUST NOT.
+**SYM-4.** A _member_ that the _consumption side_ outside the _package_ uses
+MUST be _external_.
 
-**SYM-5.** Every segment of a `Symbol` _consumption expression_ MUST be
+> **Rationale**
+> Symbols are the maintenance surface; _public_ _members_ are the promise
+> surface. Exposing an _internal_ _member_ converts an _internal_ change into a
+> breaking change.
+
+**SYM-5.** A method symbol MUST end with `()`; a field symbol MUST NOT.
+
+**SYM-6.** Every segment of a `Symbol` _consumption expression_ MUST be
 written in all uppercase, with words separated by `_`. A segment MAY be
 abbreviated only through the closed whitelist.
 
-**SYM-6.** A `Symbol` key that holds a _constructor_ MUST end with `_CTOR`.
+**SYM-7.** A `Symbol` key that holds a _constructor_ MUST end with `_CTOR`.
 
-**SYM-7.** An abbreviation MUST come from a closed whitelist. The whitelist
+**SYM-8.** An abbreviation MUST come from a closed whitelist. The whitelist
 currently contains `CTOR` and nothing else; adding an entry is a change to
 this document.
 
@@ -240,19 +257,18 @@ this document.
 > open set is a private cipher. A closed set is what lets the engineer learn
 > it once.
 
-**SYM-8.** Inside a table, an author MAY nest namespaces freely in order to
+**SYM-9.** Inside a table, an author MAY nest namespaces freely in order to
 group keys by category, and the category vocabulary is not fixed by this
 document. Only a leaf is a key; every node above it is a namespace.
 
-**SYM-9.** Only the _module_ that owns a key may declare it. A _derivation_
+**SYM-10.** Only the _module_ that owns a key may declare it. A _derivation_
 MAY override a _protected_ _member_ declared within its own family.
-A _member_ reached from outside the _package_ MUST be _public_ or _abstract_.
 
-**SYM-10.** A symbol's descriptor and its alias key are two ledgers of the
+**SYM-11.** A symbol's descriptor and its alias key are two ledgers of the
 same fact. Renaming one without renaming the other MUST be treated as a
 defect.
 
-**SYM-11.** An alias is evaluated after the fact: it is justified when the full
+**SYM-12.** An alias is evaluated after the fact: it is justified when the full
 expression would otherwise break a coding convention (the line width among
 them), and when every _consumption point_ resolves to the key it names.
 Whether to set one is not settled in advance; aliases are appended as the need
@@ -263,7 +279,7 @@ appears.
 > can be written within the conventions it must meet at all. It is therefore
 > judged where it is used, not approved where it is declared.
 
-**SYM-12.** An alias is an alternative to the full expression, not a
+**SYM-13.** An alias is an alternative to the full expression, not a
 replacement for it: a _consumption point_ MAY use either, as it needs.
 
 ## 6. Symbol Table
@@ -286,7 +302,7 @@ written and never read MUST be removed.
 **STB-4.** `_Symbol.mjs` MUST be a pure leaf. It MUST NOT import a _module_ of
 the same _package_, and it MUST NOT reference another _symbol table_, in any
 _package_; every reference to a key that another _module_ owns MUST be made in
-`_External.mjs`. A helper MAY be imported; a helper is a function, not a key
+`_Borrow.mjs`. A helper MAY be imported; a helper is a function, not a key
 or a table.
 
 **STB-5.** An exported table MAY be frozen, recursively, before it leaves the
@@ -304,25 +320,25 @@ _module_.
 **STB-7.** The structure of `A` is not required to match the paths of the
 keys it aliases.
 
-## 7. External Table
+## 7. Borrowing Table
 
-**ETB-1.** A _module_ that borrows SHOULD export a _borrowed alias table_ `_A`
-from `_External.mjs`. `_A` MUST contain only the tables the _module_ borrows
+**BTB-1.** A _module_ that borrows SHOULD export a _borrowed alias table_ `_A`
+from `_Borrow.mjs`. `_A` MUST contain only the tables the _module_ borrows
 directly. A borrowed table whose name is already short MUST be imported by
 name instead of being aliased.
 
-**ETB-2.** A _module_ MUST take every key it owns through its own
-`./_Symbol.mjs`, and every key it borrows through its own `./_External.mjs`.
+**BTB-2.** A _module_ MUST take every key it owns through its own
+`./_Symbol.mjs`, and every key it borrows through its own `./_Borrow.mjs`.
 
-**ETB-3.** An import of another _module_'s `_Symbol.mjs` MUST be written in the
-importing _module_'s own `_External.mjs` and nowhere else.
+**BTB-3.** An import of another _module_'s `_Symbol.mjs` MUST be written in the
+importing _module_'s own `_Borrow.mjs` and nowhere else.
 
-**ETB-4.** A _module_'s `_External.mjs` MUST re-export every table it imports.
+**BTB-4.** A _module_'s `_Borrow.mjs` MUST re-export every table it imports.
 
-**ETB-5.** Another _module_'s `_External.mjs` MUST NOT be imported.
+**BTB-5.** Another _module_'s `_Borrow.mjs` MUST NOT be imported.
 
-**ETB-6.** The _package_'s reference graph MUST be acyclic, and every upward
-reference MUST be made in `_External.mjs`.
+**BTB-6.** The _package_'s reference graph MUST be acyclic, and every upward
+reference MUST be made in `_Borrow.mjs`.
 
 > **Rationale**
 > The leaf property is what makes a cycle structurally impossible rather than
@@ -388,30 +404,19 @@ time, whether the _constructor_ received it or it was attached afterwards.
 
 ## 10. Public Surface
 
-**PUB-1.** The _package export_ MUST be the only export space of a
-_package_, and everything a _consumer_ may reach MUST be organized there. A raw
-_symbol table_ or _borrowing table_ MUST NOT be carried by it.
+**PUB-1.** The _package export_ MUST be the only export space of a _package_.
+Everything a _consumer_ may reach MUST be organized there.
 
-**PUB-2.** A _member_ that the _concrete_ must read or write beyond the
-_abstract_ contract MUST be exposed through the _package export_ as a
-grouped symbol namespace containing _abstract_ keys only.
+**PUB-2.** For every _subject_ the _package export_ carries, the `Symbol`s of
+the _abstract members_ that a _derivation_ outside the _package_ must implement
+MUST be carried by the _package export_ as well.
 
-**PUB-3.** The _alias tables_ MUST NOT be reachable from the
-_package export_.
+**PUB-3.** A raw _symbol table_, a _borrowing table_, and an _alias table_ MUST
+NOT be reachable from the _package export_.
 
-**PUB-4.** When the _concrete_ needs a capability that only an
-_internal_ _member_ can provide, promoting the capability to a _public_ _member_
-SHOULD be preferred over exposing the _internal_ _member_.
-
-> **Rationale**
-> Symbols are the maintenance surface; _public_ _members_ are the
-> promise surface.
-> Exposing an _internal_ _member_ converts an _internal_ change into a breaking
-> change.
-
-**PUB-5.** The _abstract_ level MUST be the only level that crosses the package
-boundary, so that a _derivation_ outside the _package_ can reach the
-_abstract members_ it must implement.
+**PUB-4.** Beyond that, what the _package export_ carries and in what form is
+not fixed by this document. Keys MAY be grouped or left flat, and an export MAY
+be added for any element the _package_ needs.
 
 ## 11. Subject Export
 
@@ -455,7 +460,7 @@ necessary.
 reference graph is acyclic; every _subject export_ carries its
 _subject constructor_; no _symbol table_ imports anything else from the
 _package_; every _abstract member_ declares a contract; every borrowed table
-is re-exported from `_External.mjs`.
+is re-exported from `_Borrow.mjs`.
 
 ## 14. Open Questions
 
