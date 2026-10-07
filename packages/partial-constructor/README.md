@@ -65,8 +65,6 @@ It is written to the following aims:
 - The contract is the _abstract members_; every other _member_ is maintenance
   surface.
 - A cycle is impossible by construction, not merely absent today.
-- Structure is traded for readability only where the loss is named, and the
-  exception is marked **provisional** until its criterion settles.
 - A rule that can be decided from the layout is stated so that a check can
   decide it, and the check is erased before the code ships.
 
@@ -92,17 +90,17 @@ package.
 
 ### Subject
 
-**Subject**<sup>15</sup> — the unit of design: one constructor, which the module
+**Subject**<sup>16</sup> — the unit of design: one constructor, which the module
 is dedicated to. A subject is either abstract or concrete.
 
 - **Subject constructor**<sup>10</sup> — the core layer: the subject as a
   constructible value.
-- **Subject directory**<sup>17</sup> — the form layer: the directory that
+- **Subject directory**<sup>16</sup> — the form layer: the directory that
   defines the subject constructor and every part of its assembly.
-- **Subject module**<sup>29</sup> — the synthesis layer: the subject
+- **Subject module**<sup>27</sup> — the synthesis layer: the subject
   constructor, its subject directory, and the other elements of the assembly,
   taken together.
-- **Subject export**<sup>5</sup> — `index.mjs`, the surface a module exposes to
+- **Subject export**<sup>4</sup> — `index.mjs`, the surface a module exposes to
   the rest of the package.
 - **Abstract**<sup>16</sup> — `_Abstract.mjs`, the abstract subject: it declares
   the contract and is not itself constructible.
@@ -112,7 +110,7 @@ is dedicated to. A subject is either abstract or concrete.
   in the sense of `class ... extends`: it takes the abstract keys of that base
   as its obligation, and is either concrete, or abstract with that obligation
   not yet fully discharged.
-- **Symbol table**<sup>6</sup> — `_Symbol.mjs`, the one place where a module
+- **Symbol table**<sup>10</sup> — `_Symbol.mjs`, the one place where a module
   defines its own member keys.
 - **Subject member**<sup>11</sup> — one member of a subject, reached through one
   key: a string when the member is public, a `Symbol` otherwise.
@@ -121,6 +119,9 @@ is dedicated to. A subject is either abstract or concrete.
   module imports keys that other modules own.
 - **Borrowed alias table**<sup>1</sup> — `_A`, short names for the borrowed
   tables.
+- **Non-subject element**<sup>3</sup> — a file or directory that defines no
+  _subject_: a directory that carries neither `_Abstract.mjs` nor
+  `_Concrete.mjs`, and a standalone file.
 
 ### Consumption
 
@@ -159,7 +160,7 @@ package that must implement it.
 
 ## 4. Subject Module Layout
 
-**LAY-1.** A _module_ MUST define exactly one _subject constructor_.
+**LAY-1.** A _subject module_ MUST define exactly one _subject constructor_.
 
 **LAY-2.** A _subject directory_ MUST contain `index.mjs` and `_Symbol.mjs`.
 
@@ -171,9 +172,11 @@ _abstract_ _subject_, `_Concrete.mjs` means a _concrete_ _subject_.
 **LAY-4.** A _subject directory_ MUST contain `_Borrow.mjs` if and only if
 the _module_ borrows keys or tables owned by another _module_.
 
-**LAY-5.** A _subject directory_ MAY contain additional files or directories,
-each owning one named concern. Such an element MUST be declared outside the
-rules of this document, and the exemption MUST be recorded where it lives.
+**LAY-5.** A _subject directory_ MAY hold _non-subject elements_ beside its
+_subjects_. Whether a directory is a _subject directory_ is decided by
+`_Abstract.mjs` or `_Concrete.mjs` alone: a directory that carries neither is a
+_non-subject element_, and so is a standalone file. This document does not
+constrain a _non-subject element_ or what it holds.
 
 **LAY-6.** The _directory_ path IS the namespace. Short names MUST NOT be made
 globally unique; the same name in two _modules_ denotes two different things.
@@ -198,18 +201,7 @@ and not sufficient for it.
 > use is what keeps each _directory_ answerable on its own, instead of
 > unfolding every part of the _subject_ at the top.
 
-**LAY-9.** Single-file exception (**provisional**). A _module_ MAY be one
-`PascalCase.mjs` file placed beside the _subject directories_, if and only if
-all three of the following hold: nothing derives from it, it owns no key,
-and it needs no independent _subject export_. Owning even one key
-disqualifies it.
-
-> **Rationale**
-> The three conditions are exactly the parts that a _directory_ would add. The
-> exception trades structure for readability, so it MUST NOT be granted to a
-> _module_ that has any of them.
-
-**LAY-10.** A filename that begins with `_` is a reserved file of this
+**LAY-9.** A filename that begins with `_` is a reserved file of this
 document. Its name is fixed and MUST NOT be replaced: the author does not
 choose it. The reserved files are:
 
@@ -230,8 +222,8 @@ choose it. The reserved files are:
 **SYM-1.** An _internal_ member key MUST be a `Symbol`, and MUST NOT be a
 string.
 
-**SYM-2.** A `Symbol` key MUST be assigned one of the three `Symbol` levels
-below.
+**SYM-2.** A `Symbol` key in a _symbol table_ MUST be assigned one of the three
+`Symbol` levels below.
 
 | Level       | Descriptor | Instance table | Static table |
 | ----------- | ---------- | -------------- | ------------ |
@@ -251,8 +243,8 @@ Who may reach a member at each level:
 _Private_ and _protected_ are the _internal_ levels; _abstract_ and _public_
 are the _external_ ones.
 
-**SYM-3.** A `Symbol` key MUST be given the narrowest level that satisfies
-all of its _consumption points_.
+**SYM-3.** A `Symbol` key in a _symbol table_ MUST be given the narrowest level
+that satisfies all of its _consumption points_.
 
 **SYM-4.** A _member_ that the _consumption side_ outside the _package_ uses
 MUST be _external_.
@@ -262,13 +254,15 @@ MUST be _external_.
 > surface. Exposing an _internal_ _member_ converts an _internal_ change into a
 > breaking change.
 
-**SYM-5.** A method symbol MUST end with `()`; a field symbol MUST NOT.
+**SYM-5.** A method symbol in a _symbol table_ MUST end with `()`; a field
+symbol MUST NOT.
 
 **SYM-6.** Every segment of a `Symbol` _consumption expression_ MUST be
 written in all uppercase, with words separated by `_`. A segment MAY be
 abbreviated only through the closed whitelist.
 
-**SYM-7.** A `Symbol` key that holds a _constructor_ MUST end with `_CTOR`.
+**SYM-7.** In a _symbol table_, a `Symbol` key that holds a _constructor_ MUST
+end with `_CTOR`.
 
 **SYM-8.** An abbreviation MUST come from a closed whitelist. The whitelist
 currently contains `CTOR` and nothing else; adding an entry is a change to
@@ -286,11 +280,7 @@ document. Only a leaf is a key; every node above it is a namespace.
 **SYM-10.** Only the _module_ that owns a key may declare it. A _derivation_
 MAY override a _protected_ _member_ declared within its own family.
 
-**SYM-11.** A symbol's descriptor and its alias key are two ledgers of the
-same fact. Renaming one without renaming the other MUST be treated as a
-defect.
-
-**SYM-12.** An alias is evaluated after the fact: it is justified when the full
+**SYM-11.** An alias is evaluated after the fact: it is justified when the full
 expression would otherwise break a coding convention (the line width among
 them), and when every _consumption point_ resolves to the key it names.
 Whether to set one is not settled in advance; aliases are appended as the need
@@ -301,7 +291,7 @@ appears.
 > can be written within the conventions it must meet at all. It is therefore
 > judged where it is used, not approved where it is declared.
 
-**SYM-13.** An alias is an alternative to the full expression, not a
+**SYM-12.** An alias is an alternative to the full expression, not a
 replacement for it: a _consumption point_ MAY use either, as it needs.
 
 ## 6. Symbol Table
@@ -461,8 +451,5 @@ export takes the name `Abstract` or `Concrete`.
 
 ## 12. Open Questions
 
-- The single-file exception has a three-condition criterion but no threshold
-  for "extreme simplification". Whether the criterion is sufficient, or
-  needs a stated maximum size, is not settled.
 - Which coding conventions can justify an alias is not enumerated, and where
   the boundary lies is left to review.
