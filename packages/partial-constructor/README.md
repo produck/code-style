@@ -87,7 +87,7 @@ marks; the count is zero for a term that no rule uses.
 
 ### Package
 
-**Package**<sup>15</sup> — the publishable unit that contains one or more
+**Package**<sup>14</sup> — the publishable unit that contains one or more
 modules. A constraint that no single module can satisfy alone is stated of the
 package.
 
@@ -104,14 +104,14 @@ is dedicated to. A subject is either abstract or concrete.
   constructible value.
 - **Subject directory**<sup>16</sup> — the form layer: the directory that
   defines the subject constructor and every part of its assembly.
-- **Subject module**<sup>31</sup> — the synthesis layer: the subject
+- **Subject module**<sup>30</sup> — the synthesis layer: the subject
   constructor, its subject directory, and the other elements of the assembly,
   taken together.
 - **Subject export**<sup>4</sup> — `index.mjs`, the surface a module exposes to
   the rest of the package.
 - **Abstract**<sup>17</sup> — `_Abstract.mjs`, the abstract subject: it declares
   the contract and is not itself constructible.
-- **Concrete**<sup>8</sup> — `_Concrete.mjs`, the concrete subject: a
+- **Concrete**<sup>6</sup> — `_Concrete.mjs`, the concrete subject: a
   constructible derivation of the abstract one.
 - **Derivation**<sup>9</sup> — a subject built on another subject's contract,
   in the sense of `class ... extends`: it takes the abstract keys of that base
@@ -294,11 +294,11 @@ document. Only a leaf is a key; every node above it is a namespace.
 **SYM-10.** Only the _module_ that owns a key may declare it. A _derivation_
 MAY override a _protected_ _member_ declared within its own family.
 
-**SYM-11.** An alias is evaluated after the fact: it is justified when the full
-expression would otherwise break a coding convention (the line width among
-them), and when every _consumption point_ resolves to the key it names.
-Whether to set one is not settled in advance; aliases are appended as the need
-appears.
+**SYM-11.** (**provisional**) An alias is evaluated after the fact: it is
+justified when the full expression would otherwise break a coding convention
+(the line width among them), and when every _consumption point_ resolves to the
+key it names. Whether to set one is not settled in advance; aliases are
+appended as the need appears.
 
 > **Rationale**
 > The question an alias answers is not how much it saves, but whether the code
@@ -340,8 +340,9 @@ _module_.
 > failing assignment. The cost is a recursive freeze at definition time and the
 > helper it needs imported into `_Symbol.mjs`.
 
-**STB-6.** A _module_ that owns keys SHOULD export an _alias table_ `A` from
-`_Symbol.mjs`. `A` MUST contain only that _module_'s own keys.
+**STB-6.** An _alias table_ `A` MUST contain only that _module_'s own keys.
+A key whose full expression breaks no coding convention MUST NOT be given an
+alias.
 
 **STB-7.** The structure of `A` is not required to match the paths of the
 keys it aliases.
@@ -423,10 +424,6 @@ Doing so is permitted and does not conflict with the purpose of this
 specification, but it is not RECOMMENDED: it is laborious to write and to
 read. The RECOMMENDED form is `class ... extends`.
 
-**ABS-7.** A role name and the name of a _concrete_ MUST be distinguished. A
-role name carries the contract vocabulary and MUST NOT be renamed when the
-_concrete_, the _package_, or the product changes.
-
 ## 9. Construction
 
 **CTR-1.** A _constructor_ whose instance-level _members_ call a static _member_
@@ -494,8 +491,3 @@ _package_ is expected to reach it.
 
 **SUB-4.** A _subject export_ MAY carry anything else, provided that no other
 export takes the name `Abstract` or `Concrete`.
-
-## 12. Open Questions
-
-- Which coding conventions can justify an alias is not enumerated, and where
-  the boundary lies is left to review.
