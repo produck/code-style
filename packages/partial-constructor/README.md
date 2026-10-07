@@ -36,6 +36,15 @@ decoration.
 
 ## 2. Scope
 
+A _constructor_ assembled in one file fails in a way that is easy to state and
+hard to notice: the file becomes the unit of change, no part of it can be read
+without the whole, every _member_ is a promise to every caller so that every
+edit is potentially breaking, and the order that keeps it navigable lives in
+the author's head instead of in the layout. This document moves that order
+into the _directory_, where a reader and a check can both see it.
+
+It covers:
+
 - The shape of a _module_: its directories, its files, and the references
   between them.
 - The _internal_ member-key system and its visibility levels.
@@ -45,8 +54,21 @@ decoration.
   construction.
 - Which parts of a _module_ are _public_ surface and which are maintenance
   surface.
-- What enforces a rule: convention, and optionally a checking base whose
-  checks are erased before the code ships.
+
+It is written to the following aims:
+
+- A _module_ answers on its own: the tree is read from the outside in, and
+  everything below a _directory_ is detail the reader may leave unread.
+- Local names stay short, because the path is the namespace and a collision
+  between two _modules_ is harmless.
+- An _internal_ change never breaks a _consumer_.
+- The contract is the _abstract members_; every other _member_ is maintenance
+  surface.
+- A cycle is impossible by construction, not merely absent today.
+- Structure is traded for readability only where the loss is named, and the
+  exception is marked **provisional** until its criterion settles.
+- A rule that can be decided from the layout is stated so that a check can
+  decide it, and the check is erased before the code ships.
 
 ## 3. Definitions
 
@@ -61,7 +83,7 @@ marks; the count is zero for a term that no rule uses.
 
 ### Package
 
-**Package**<sup>15</sup> — the publishable unit that contains one or more
+**Package**<sup>10</sup> — the publishable unit that contains one or more
 modules. A constraint that no single module can satisfy alone is stated of the
 package.
 
@@ -75,12 +97,12 @@ is dedicated to. A subject is either abstract or concrete.
 
 - **Subject constructor**<sup>10</sup> — the core layer: the subject as a
   constructible value.
-- **Subject directory**<sup>15</sup> — the form layer: the directory that
+- **Subject directory**<sup>17</sup> — the form layer: the directory that
   defines the subject constructor and every part of its assembly.
-- **Subject module**<sup>27</sup> — the synthesis layer: the subject
+- **Subject module**<sup>29</sup> — the synthesis layer: the subject
   constructor, its subject directory, and the other elements of the assembly,
   taken together.
-- **Subject export**<sup>6</sup> — `index.mjs`, the surface a module exposes to
+- **Subject export**<sup>5</sup> — `index.mjs`, the surface a module exposes to
   the rest of the package.
 - **Abstract**<sup>16</sup> — `_Abstract.mjs`, the abstract subject: it declares
   the contract and is not itself constructible.
@@ -90,9 +112,9 @@ is dedicated to. A subject is either abstract or concrete.
   in the sense of `class ... extends`: it takes the abstract keys of that base
   as its obligation, and is either concrete, or abstract with that obligation
   not yet fully discharged.
-- **Symbol table**<sup>7</sup> — `_Symbol.mjs`, the one place where a module
+- **Symbol table**<sup>6</sup> — `_Symbol.mjs`, the one place where a module
   defines its own member keys.
-- **Subject member**<sup>9</sup> — one member of a subject, reached through one
+- **Subject member**<sup>11</sup> — one member of a subject, reached through one
   key: a string when the member is public, a `Symbol` otherwise.
 - **Alias table**<sup>2</sup> — `A`, short names for the module's own keys.
 - **Borrowing table**<sup>3</sup> — `_Borrow.mjs`, the one place where a
@@ -105,7 +127,7 @@ is dedicated to. A subject is either abstract or concrete.
 **Consumption side**<sup>1</sup> — everything that reads a key, as opposed to
 the module that declares it.
 
-- **Consumer**<sup>3</sup> — the code that depends on a subject module, by
+- **Consumer**<sup>4</sup> — the code that depends on a subject module, by
   deriving from it or by using it.
 - **Consumption point**<sup>5</sup> — one place in the code that reads a key.
 - **Consumption expression**<sup>1</sup> — the expression written at such a
@@ -123,7 +145,7 @@ member sits at exactly one of the levels below.
 - **Public**<sup>4</sup> — reached by any consumer; the member is keyed by a
   string, not a `Symbol`.
 
-**Internal**<sup>6</sup> — the private and protected levels together. Internal
+**Internal**<sup>7</sup> — the private and protected levels together. Internal
 means the package is the limit of reach: an internal key is never carried by the
 package export. Both internal levels are keyed by a `Symbol`; an abstract member
 is keyed by a `Symbol` too, yet it belongs with a public member on the external
@@ -384,6 +406,10 @@ Doing so is permitted and does not conflict with the purpose of this
 specification, but it is not RECOMMENDED: it is laborious to write and to
 read. The RECOMMENDED form is `class ... extends`.
 
+**ABS-7.** A role name and the name of a _concrete_ MUST be distinguished. A
+role name carries the contract vocabulary and MUST NOT be renamed when the
+_concrete_, the _package_, or the product changes.
+
 ## 9. Construction
 
 **CTR-1.** A _constructor_ whose instance-level _members_ call a static _member_
@@ -433,36 +459,7 @@ _subject export_ as a namespace under that _subject_'s own name.
 **SUB-4.** A _subject export_ MAY carry anything else, provided that no other
 export takes the name `Abstract` or `Concrete`.
 
-## 12. Naming
-
-**NAM-1.** A name MUST be checked against the mainstream practice of its
-domain before it is adopted. A name that is defensible only inside this
-_package_ MUST NOT be adopted.
-
-**NAM-2.** A term that denotes one thing MUST NOT be used for another. Where
-two concepts are close, the _package_ MUST fix one word per concept and
-record both.
-
-**NAM-3.** A role name and the name of a _concrete_ MUST be distinguished. A
-role name carries the contract vocabulary and MUST NOT be renamed when the
-_concrete_, the _package_, or the product changes.
-
-**NAM-4.** A hook that the framework calls MUST be named as a verb phrase; a
-hook that the framework reads MUST be named as a noun phrase.
-
-**NAM-5.** A _package_ that introduces domain vocabulary MUST record it as a
-glossary, one entry per term, stating the distinction that makes the term
-necessary.
-
-## 13. Conformance
-
-**CON-1.** A _package_ conforms only if all of the following hold: its
-reference graph is acyclic; every _subject export_ carries its
-_subject constructor_; no _symbol table_ imports anything else from the
-_package_; every _abstract member_ declares a contract; every borrowed table
-is re-exported from `_Borrow.mjs`.
-
-## 14. Open Questions
+## 12. Open Questions
 
 - The single-file exception has a three-condition criterion but no threshold
   for "extreme simplification". Whether the criterion is sufficient, or
