@@ -43,7 +43,7 @@ decoration.
   _concrete_ counterparts.
 - How an object is constructed, and how a dependency is attached after
   construction.
-- Which parts of a _module_ are public surface and which are maintenance
+- Which parts of a _module_ are _public_ surface and which are maintenance
   surface.
 - What enforces a rule: convention, and optionally a checking base whose
   checks are erased before the code ships.
@@ -61,7 +61,7 @@ marks; the count is zero for a term that no rule uses.
 
 ### Package
 
-**Package**<sup>13</sup> — the publishable unit that contains one or more
+**Package**<sup>14</sup> — the publishable unit that contains one or more
 modules. A constraint that no single module can satisfy alone is stated of the
 package.
 
@@ -73,7 +73,7 @@ package.
 **Subject**<sup>14</sup> — the unit of design: one constructor, which the module
 is dedicated to. A subject is either abstract or concrete.
 
-- **Subject constructor**<sup>11</sup> — the core layer: the subject as a
+- **Subject constructor**<sup>12</sup> — the core layer: the subject as a
   constructible value.
 - **Subject directory**<sup>15</sup> — the form layer: the directory that
   defines the subject constructor and every part of its assembly.
@@ -82,17 +82,17 @@ is dedicated to. A subject is either abstract or concrete.
   taken together.
 - **Subject export**<sup>6</sup> — `index.mjs`, the surface a module exposes to
   the rest of the package.
-- **Abstract**<sup>21</sup> — `_Abstract.mjs`, the abstract subject: it declares
+- **Abstract**<sup>19</sup> — `_Abstract.mjs`, the abstract subject: it declares
   the contract and is not itself constructible.
 - **Concrete**<sup>8</sup> — `_Concrete.mjs`, the concrete subject: a
   constructible derivation of the abstract one.
-- **Derivation**<sup>5</sup> — a subject built on another subject's contract,
+- **Derivation**<sup>6</sup> — a subject built on another subject's contract,
   in the sense of `class ... extends`: it takes the abstract keys of that base
   as its obligation, and is either concrete, or abstract with that obligation
   not yet fully discharged.
 - **Symbol table**<sup>7</sup> — `_Symbol.mjs`, the one place where a module
   defines its own member keys.
-- **Subject member**<sup>17</sup> — one member of a subject, reached through one
+- **Subject member**<sup>12</sup> — one member of a subject, reached through one
   key: a string when the member is public, a `Symbol` otherwise.
 - **Alias table**<sup>2</sup> — `A`, short names for the module's own keys.
 - **Borrowing table**<sup>3</sup> — `_External.mjs`, the one place where a
@@ -111,26 +111,23 @@ the module that declares it.
 - **Consumption expression**<sup>1</sup> — the expression written at such a
   place: the path of tables and namespaces, ending in the key.
 
-### Member accessibility
+### Member
 
-A member's level is the answer to one question: who may reach it.
+A member's accessibility is the answer to one question: who may reach it. A
+member sits at exactly one of the levels below.
 
-| Level     | Form               | Reached by                       |
-| --------- | ------------------ | -------------------------------- |
-| private   | `Symbol('.#name')` | the subject itself               |
-| protected | `Symbol('.$name')` | any other subject in the package |
-| abstract  | `Symbol('._name')` | the concrete                     |
-| public    | `'name'`           | any consumer                     |
+- **Private**<sup>2</sup> — reached by the subject itself, and by nothing else.
+- **Protected**<sup>4</sup> — reached by any other subject in the package.
+- **Abstract member**<sup>6</sup> — reached by a derivation of the declaring
+  subject.
+- **Public**<sup>6</sup> — reached by any consumer; the member is keyed by a
+  string, not a `Symbol`.
 
 **Internal**<sup>7</sup> — the private and protected levels together. Internal
 means the package is the limit of reach: an internal key is never carried by the
 package export. Both internal levels are keyed by a `Symbol`; an abstract member
 is keyed by a `Symbol` too, yet it is the contract surface, not an internal
 member.
-
-**Exported**<sup>0</sup> — the abstract level alone. An abstract key is carried
-by the package export, so the concrete can reach the members it must implement
-even from outside the package. No other level crosses the package boundary.
 
 ## 4. Subject Module Layout
 
@@ -205,13 +202,23 @@ choose it. The reserved files are:
 **SYM-1.** An _internal_ member key MUST be a `Symbol`, and MUST NOT be a
 string.
 
-**SYM-2.** A `Symbol` key MUST be assigned one of the three levels below.
+**SYM-2.** A `Symbol` key MUST be assigned one of the three `Symbol` levels
+below.
 
-| Level      | Descriptor | Instance table | Static table |
-| ---------- | ---------- | -------------- | ------------ |
-| private    | `.#name`   | `I`            | `S`          |
-| protected  | `.$name`   | `$I`           | `$S`         |
-| _abstract_ | `._name`   | `_I`           | `_S`         |
+| Level       | Descriptor | Instance table | Static table |
+| ----------- | ---------- | -------------- | ------------ |
+| _private_   | `.#name`   | `I`            | `S`          |
+| _protected_ | `.$name`   | `$I`           | `$S`         |
+| _abstract_  | `._name`   | `_I`           | `_S`         |
+
+Who may reach a member at each level:
+
+| Level       | Form               | Reached by                            |
+| ----------- | ------------------ | ------------------------------------- |
+| _private_   | `Symbol('.#name')` | the subject itself                    |
+| _protected_ | `Symbol('.$name')` | any other subject in the package      |
+| _abstract_  | `Symbol('._name')` | a derivation of the declaring subject |
+| _public_    | `'name'`           | any consumer                          |
 
 **SYM-3.** A `Symbol` key MUST be given the narrowest level that satisfies
 all of its _consumption points_.
@@ -238,8 +245,8 @@ group keys by category, and the category vocabulary is not fixed by this
 document. Only a leaf is a key; every node above it is a namespace.
 
 **SYM-9.** Only the _module_ that owns a key may declare it. A _derivation_
-MAY override a protected _member_ declared within its own family.
-A _member_ reached from outside the _package_ MUST be public or _abstract_.
+MAY override a _protected_ _member_ declared within its own family.
+A _member_ reached from outside the _package_ MUST be _public_ or _abstract_.
 
 **SYM-10.** A symbol's descriptor and its alias key are two ledgers of the
 same fact. Renaming one without renaming the other MUST be treated as a
@@ -329,19 +336,19 @@ reference MUST be made in `_External.mjs`.
 MUST be declared _abstract_ through the shared _abstract_ layer. Documenting it
 as _abstract_ in prose MUST NOT be used as a substitute.
 
-**ABS-2.** Every _abstract_ _member_ MUST declare a contract for what it
+**ABS-2.** Every _abstract member_ MUST declare a contract for what it
 returns, including whether it MAY answer a promise.
 
-**ABS-3.** The contract surface of a family is exactly its _abstract_
-_members_. A _derivation_ takes them on as an obligation; every other _member_
-in the _module_ is maintenance surface.
+**ABS-3.** The contract surface of a family is exactly its
+_abstract members_. A _derivation_ takes them on as an obligation; every
+other _member_ in the _module_ is maintenance surface.
 
-**ABS-4.** A _constructor_ with an unimplemented _abstract_ _member_ MUST be
+**ABS-4.** A _constructor_ with an unimplemented _abstract member_ MUST be
 _abstract_ itself.
 
 > **Rationale**
 > Implementing part of a contract does not discharge the rest, so the
-> _derivation_ that leaves an _abstract_ _member_ unimplemented is not
+> _derivation_ that leaves an _abstract member_ unimplemented is not
 > constructible. The converse does not hold: a contract not yet designed leaves
 > no unimplemented member behind, and the subject may still be _abstract_.
 
@@ -351,8 +358,8 @@ Constructing the _abstract_ _subject_ SHOULD fail.
 
 > **Rationale**
 > Making the call fail is a technical measure, not a free one: ECMAScript
-> supplies none, so without a shared helper it costs a guard in every abstract
-> constructor, and the guard ships. A _package_ that reads the cost as too
+> supplies none, so without a shared helper it costs a guard in every _abstract_
+> _constructor_, and the guard ships. A _package_ that reads the cost as too
 > high settles for the convention.
 
 **ABS-6.** A _derivation_ MAY be produced without `class` and `extends` syntax,
@@ -380,8 +387,8 @@ stable for the whole family. A secondary dependency MUST NOT be added as a
 further _constructor_ argument.
 
 **CTR-3.** A dependency that cannot be passed to the _constructor_ MUST be
-attached through an explicit protected _member_ before the object is reachable
-from the public surface.
+attached through an explicit _protected_ _member_ before the object is reachable
+from the _public_ surface.
 
 **CTR-4.** A guard MUST be justified by a reachable state, not by caution.
 Where an operation is single-shot because its only caller is single-shot,
@@ -407,13 +414,18 @@ grouped symbol namespace containing _abstract_ keys only.
 _package export_.
 
 **PUB-4.** When the _concrete_ needs a capability that only an
-_internal_ _member_ can provide, promoting the capability to a public _member_
+_internal_ _member_ can provide, promoting the capability to a _public_ _member_
 SHOULD be preferred over exposing the _internal_ _member_.
 
 > **Rationale**
-> Symbols are the maintenance surface; public _members_ are the promise surface.
+> Symbols are the maintenance surface; _public_ _members_ are the
+> promise surface.
 > Exposing an _internal_ _member_ converts an _internal_ change into a breaking
 > change.
+
+**PUB-5.** The _abstract_ level MUST be the only level that crosses the package
+boundary, so that a _derivation_ outside the _package_ can reach the
+_abstract members_ it must implement.
 
 ## 11. Subject Export
 
@@ -456,7 +468,7 @@ necessary.
 **CON-1.** A _package_ conforms only if all of the following hold: its
 reference graph is acyclic; every _subject export_ carries its
 _subject constructor_; no _symbol table_ imports anything else from the
-_package_; every _abstract_ _member_ declares a contract; every borrowed table
+_package_; every _abstract member_ declares a contract; every borrowed table
 is re-exported from `_External.mjs`.
 
 ## 14. Open Questions
