@@ -22,7 +22,7 @@ The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD
 NOT, RECOMMENDED, MAY, and OPTIONAL in this document are to be interpreted
 as described in RFC 2119 and RFC 8174.
 
-Enforcement is by convention alone. No rule here is checked by the language
+Enforcement is by convention alone. No rule here is checked by ECMAScript
 or by a compiler, and none is expected to be. A convention may instead be
 checked in tests, to whatever depth a supporting base provides, and that
 checking is erased from the shipped artifact. This document names no such
@@ -61,7 +61,7 @@ marks; the count is zero for a term that no rule uses.
 
 ### Package
 
-**Package**<sup>12</sup> — the publishable unit that contains one or more
+**Package**<sup>13</sup> — the publishable unit that contains one or more
 modules. A constraint that no single module can satisfy alone is stated of the
 package.
 
@@ -70,25 +70,29 @@ package.
 
 ### Subject
 
-**Subject**<sup>13</sup> — the unit of design: one constructor, which the module
+**Subject**<sup>14</sup> — the unit of design: one constructor, which the module
 is dedicated to. A subject is either abstract or concrete.
 
-- **Subject constructor**<sup>13</sup> — the core layer: the subject as a
+- **Subject constructor**<sup>11</sup> — the core layer: the subject as a
   constructible value.
-- **Subject directory**<sup>14</sup> — the form layer: the directory that
+- **Subject directory**<sup>15</sup> — the form layer: the directory that
   defines the subject constructor and every part of its assembly.
-- **Subject module**<sup>26</sup> — the synthesis layer: the subject
+- **Subject module**<sup>27</sup> — the synthesis layer: the subject
   constructor, its subject directory, and the other elements of the assembly,
   taken together.
 - **Subject export**<sup>6</sup> — `index.mjs`, the surface a module exposes to
   the rest of the package.
-- **Abstract**<sup>16</sup> — `_Abstract.mjs`, the abstract subject: it declares
+- **Abstract**<sup>21</sup> — `_Abstract.mjs`, the abstract subject: it declares
   the contract and is not itself constructible.
-- **Concrete**<sup>9</sup> — `_Concrete.mjs`, the concrete subject: a
+- **Concrete**<sup>8</sup> — `_Concrete.mjs`, the concrete subject: a
   constructible derivation of the abstract one.
+- **Derivation**<sup>5</sup> — a subject built on another subject's contract,
+  in the sense of `class ... extends`: it takes the abstract keys of that base
+  as its obligation, and is either concrete, or abstract with that obligation
+  not yet fully discharged.
 - **Symbol table**<sup>7</sup> — `_Symbol.mjs`, the one place where a module
   defines its own member keys.
-- **Subject member**<sup>16</sup> — one member of a subject, reached through one
+- **Subject member**<sup>17</sup> — one member of a subject, reached through one
   key: a string when the member is public, a `Symbol` otherwise.
 - **Alias table**<sup>2</sup> — `A`, short names for the module's own keys.
 - **Borrowing table**<sup>3</sup> — `_External.mjs`, the one place where a
@@ -101,8 +105,8 @@ is dedicated to. A subject is either abstract or concrete.
 **Consumption side**<sup>0</sup> — everything that reads a key, as opposed to
 the module that declares it.
 
-- **Consumer**<sup>1</sup> — the actor outside the package that reaches a
-  subject through its public members.
+- **Consumer**<sup>3</sup> — the code that depends on a subject module, by
+  deriving from it or by using it.
 - **Consumption point**<sup>5</sup> — one place in the code that reads a key.
 - **Consumption expression**<sup>1</sup> — the expression written at such a
   place: the path of tables and namespaces, ending in the key.
@@ -154,9 +158,9 @@ globally unique; the same name in two _modules_ denotes two different things.
 > harmless when the path disambiguates it. Because the _module_ is the
 > namespace, a _symbol table_ MUST NOT limit its own key count.
 
-**LAY-7.** A derived _constructor_ MUST be placed in a _directory_ parallel to,
-and a sibling of, its _abstract_ base's _subject directory_. It MUST NOT be
-nested inside that _directory_.
+**LAY-7.** A _derivation_ MUST be placed in a _directory_ parallel to, and a
+sibling of, its _abstract_ base's _subject directory_. It MUST NOT be nested
+inside that _directory_.
 
 **LAY-8.** Nesting downward inside a _subject directory_ MUST be reserved for
 _subjects_ that the outer one uses; a _subject_ that the outer one does not use
@@ -166,8 +170,8 @@ and not sufficient for it.
 > **Rationale**
 > The tree is read from the outside in: a _directory_ states what it is about,
 > and everything below it is detail the engineer may leave unread. Nesting by
-> use is what keeps each level answerable on its own, instead of unfolding
-> every part of the _subject_ at the top.
+> use is what keeps each _directory_ answerable on its own, instead of
+> unfolding every part of the _subject_ at the top.
 
 **LAY-9.** Single-file exception (**provisional**). A _module_ MAY be one
 `PascalCase.mjs` file placed beside the _subject directories_, if and only if
@@ -233,8 +237,8 @@ this document.
 group keys by category, and the category vocabulary is not fixed by this
 document. Only a leaf is a key; every node above it is a namespace.
 
-**SYM-9.** Only the _module_ that owns a key may declare it. A derived
-_constructor_ MAY override a protected _member_ declared within its own family.
+**SYM-9.** Only the _module_ that owns a key may declare it. A _derivation_
+MAY override a protected _member_ declared within its own family.
 A _member_ reached from outside the _package_ MUST be public or _abstract_.
 
 **SYM-10.** A symbol's descriptor and its alias key are two ledgers of the
@@ -261,7 +265,7 @@ replacement for it: a _consumption point_ MAY use either, as it needs.
 owns it. That definition is the single source of truth for its meaning, and
 every reference MUST resolve to it.
 
-**STB-2.** `_Symbol.mjs` MUST NOT export a top-level space other than the six
+**STB-2.** `_Symbol.mjs` MUST NOT export anything other than the six
 tables of SYM-2 and `A`.
 
 **STB-3.** A key MUST have at least one _consumption point_. A key that is
@@ -302,12 +306,15 @@ name instead of being aliased.
 
 **ETB-2.** A _module_ MUST take every key it owns through its own
 `./_Symbol.mjs`, and every key it borrows through its own `./_External.mjs`.
-An import of another _module_'s `_Symbol.mjs` MUST be written in the importing
-_module_'s own `_External.mjs` and nowhere else, and the table so imported MUST
-be re-exported from that file. Another _module_'s `_External.mjs` MUST NOT be
-imported.
 
-**ETB-3.** The _package_'s reference graph MUST be acyclic, and every upward
+**ETB-3.** An import of another _module_'s `_Symbol.mjs` MUST be written in the
+importing _module_'s own `_External.mjs` and nowhere else.
+
+**ETB-4.** A _module_'s `_External.mjs` MUST re-export every table it imports.
+
+**ETB-5.** Another _module_'s `_External.mjs` MUST NOT be imported.
+
+**ETB-6.** The _package_'s reference graph MUST be acyclic, and every upward
 reference MUST be made in `_External.mjs`.
 
 > **Rationale**
@@ -318,7 +325,7 @@ reference MUST be made in `_External.mjs`.
 
 ## 8. Abstract and Concrete
 
-**ABS-1.** A _constructor_ that a downstream author is expected to derive from
+**ABS-1.** A _constructor_ that a _consumer_ is expected to derive from
 MUST be declared _abstract_ through the shared _abstract_ layer. Documenting it
 as _abstract_ in prose MUST NOT be used as a substitute.
 
@@ -326,14 +333,30 @@ as _abstract_ in prose MUST NOT be used as a substitute.
 returns, including whether it MAY answer a promise.
 
 **ABS-3.** The contract surface of a family is exactly its _abstract_
-_members_. Those _members_ are the _concrete_'s obligation; every other _member_
+_members_. A _derivation_ takes them on as an obligation; every other _member_
 in the _module_ is maintenance surface.
 
-**ABS-4.** An _abstract_ _subject_ MUST NOT be constructible directly.
-Constructing it MUST fail.
+**ABS-4.** A _constructor_ with an unimplemented _abstract_ _member_ MUST be
+_abstract_ itself.
 
-**ABS-5.** A derived _constructor_ MAY be produced without `class` and
-`extends` syntax, by any means that yields the same derivation relation.
+> **Rationale**
+> Implementing part of a contract does not discharge the rest, so the
+> _derivation_ that leaves an _abstract_ _member_ unimplemented is not
+> constructible. The converse does not hold: a contract not yet designed leaves
+> no unimplemented member behind, and the subject may still be _abstract_.
+
+**ABS-5.** A _consumer_ MUST NOT instantiate the _abstract_ _subject_ directly.
+ECMAScript stops no such call, so the prohibition is a convention.
+Constructing the _abstract_ _subject_ SHOULD fail.
+
+> **Rationale**
+> Making the call fail is a technical measure, not a free one: ECMAScript
+> supplies none, so without a shared helper it costs a guard in every abstract
+> constructor, and the guard ships. A _package_ that reads the cost as too
+> high settles for the convention.
+
+**ABS-6.** A _derivation_ MAY be produced without `class` and `extends` syntax,
+by any means that yields the same derivation relation.
 Doing so is permitted and does not conflict with the purpose of this
 specification, but it is not RECOMMENDED: it is laborious to write and to
 read. The RECOMMENDED form is `class ... extends`.
