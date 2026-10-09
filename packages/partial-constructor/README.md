@@ -104,7 +104,7 @@ is dedicated to. A subject is either abstract or concrete.
   constructible value.
 - **Subject directory**<sup>16</sup> — the form layer: the directory that
   defines the subject constructor and every part of its assembly.
-- **Subject module**<sup>30</sup> — the synthesis layer: the subject
+- **Subject module**<sup>34</sup> — the synthesis layer: the subject
   constructor, its subject directory, and the other elements of the assembly,
   taken together.
 - **Subject export**<sup>4</sup> — `index.mjs`, the surface a module exposes to
@@ -117,7 +117,7 @@ is dedicated to. A subject is either abstract or concrete.
   in the sense of `class ... extends`: it takes the abstract keys of that base
   as its obligation, and is either concrete, or abstract with that obligation
   not yet fully discharged.
-- **Symbol table**<sup>10</sup> — `_Symbol.mjs`, the one place where a module
+- **Symbol table**<sup>11</sup> — `_Symbol.mjs`, the one place where a module
   defines its own member keys.
 - **Subject member**<sup>11</sup> — one member of a subject, reached through one
   key: a string when the member is public, a `Symbol` otherwise.
@@ -314,8 +314,9 @@ replacement for it: a _consumption point_ MAY use either, as it needs.
 owns it. That definition is the single source of truth for its meaning, and
 every reference MUST resolve to it.
 
-**STB-2.** `_Symbol.mjs` MUST NOT export anything other than the six
-tables of SYM-2 and `A`.
+**STB-2.** `_Symbol.mjs` MUST NOT export anything other than the six tables of
+SYM-2 and `A`. Those are the tables a _module_ may have, and not the tables it
+must have: a table holding no key MUST NOT be exported.
 
 **STB-3.** A key MUST have at least one _consumption point_. A key that is
 written and never read MUST be removed.
@@ -350,9 +351,10 @@ keys it aliases.
 ## 7. Borrowing Table
 
 **BTB-1.** A _module_ that borrows SHOULD export a _borrowed alias table_ `_A`
-from `_Borrow.mjs`. `_A` MUST contain only the tables the _module_ borrows
-directly. A borrowed table whose name is already short MUST be imported by
-name instead of being aliased.
+from `_Borrow.mjs`. What it borrows is another _module_'s _symbol table_ as a
+whole, taken under that _module_'s name; `_A` MUST contain only the tables the
+_module_ borrows directly, and a table whose name is already short MUST be
+taken by that name instead of being aliased.
 
 **BTB-2.** A _module_ MUST take every key it owns through its own
 `./_Symbol.mjs`, and every key it borrows through its own `./_Borrow.mjs`.
@@ -360,7 +362,8 @@ name instead of being aliased.
 **BTB-3.** An import of another _module_'s `_Symbol.mjs` MUST be written in the
 importing _module_'s own `_Borrow.mjs` and nowhere else.
 
-**BTB-4.** A _module_'s `_Borrow.mjs` MUST re-export every table it imports.
+**BTB-4.** A _module_'s `_Borrow.mjs` MUST re-export every table it imports,
+under the source _module_'s own name.
 
 **BTB-5.** Another _module_'s `_Borrow.mjs` MUST NOT be imported.
 
