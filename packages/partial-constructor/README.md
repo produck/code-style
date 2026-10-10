@@ -97,17 +97,17 @@ package.
 
 ### Subject
 
-**Subject**<sup>22</sup> — the unit of design: one constructor, which the module
+**Subject**<sup>23</sup> — the unit of design: one constructor, which the module
 is dedicated to. A subject is either abstract or concrete.
 
 - **Subject constructor**<sup>11</sup> — the core layer: the subject as a
   constructible value.
 - **Subject directory**<sup>16</sup> — the form layer: the directory that
   defines the subject constructor and every part of its assembly.
-- **Subject module**<sup>34</sup> — the synthesis layer: the subject
+- **Subject module**<sup>35</sup> — the synthesis layer: the subject
   constructor, its subject directory, and the other elements of the assembly,
   taken together.
-- **Subject export**<sup>4</sup> — `index.mjs`, the surface a module exposes to
+- **Subject export**<sup>6</sup> — `index.mjs`, the surface a module exposes to
   the rest of the package.
 - **Abstract**<sup>16</sup> — `_Abstract.mjs`, the abstract subject: it declares
   the contract and is not itself constructible.
@@ -135,7 +135,7 @@ is dedicated to. A subject is either abstract or concrete.
 **Consumption side**<sup>1</sup> — everything that reads a key, as opposed to
 the module that declares it.
 
-- **Consumer**<sup>7</sup> — the code that depends on a subject module, by
+- **Consumer**<sup>9</sup> — the code that depends on a subject module, by
   deriving from it or by using it.
 - **Consumption point**<sup>5</sup> — one place in the code that reads a key.
 - **Consumption expression**<sup>1</sup> — the expression written at such a
@@ -494,3 +494,11 @@ _package_ is expected to reach it.
 
 **SUB-4.** A _subject export_ MAY carry anything else, provided that no other
 export takes the name `Abstract` or `Concrete`.
+
+**SUB-5.** A _consumer_ MUST reach a _subject_ through the _subject export_ of
+the _module_ that owns it, never through `_Abstract.mjs` or `_Concrete.mjs`.
+
+> **Rationale**
+> The _subject export_ is what the owner is free to rearrange; a _consumer_
+> that reaches past it turns the file layout into a promise, so moving a file
+> becomes a breaking change.
