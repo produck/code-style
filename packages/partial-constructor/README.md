@@ -87,7 +87,7 @@ marks; the count is zero for a term that no rule uses.
 
 ### Package
 
-**Package**<sup>14</sup> — the publishable unit that contains one or more
+**Package**<sup>16</sup> — the publishable unit that contains one or more
 modules. A constraint that no single module can satisfy alone is stated of the
 package.
 
@@ -109,7 +109,7 @@ is dedicated to. A subject is either abstract or concrete.
   taken together.
 - **Subject export**<sup>4</sup> — `index.mjs`, the surface a module exposes to
   the rest of the package.
-- **Abstract**<sup>17</sup> — `_Abstract.mjs`, the abstract subject: it declares
+- **Abstract**<sup>16</sup> — `_Abstract.mjs`, the abstract subject: it declares
   the contract and is not itself constructible.
 - **Concrete**<sup>6</sup> — `_Concrete.mjs`, the concrete subject: a
   constructible derivation of the abstract one.
@@ -194,8 +194,8 @@ globally unique; the same name in two _modules_ denotes two different things.
 > namespace, a _symbol table_ MUST NOT limit its own key count.
 
 **LAY-7.** A _derivation_ MUST be placed in a _directory_ parallel to, and a
-sibling of, its _abstract_ base's _subject directory_. It MUST NOT be nested
-inside that _directory_.
+sibling of, its base's _subject directory_. It MUST NOT be nested inside that
+_directory_.
 
 **LAY-8.** Nesting downward inside a _subject directory_ MUST be reserved for
 _subjects_ that the outer one uses; a _subject_ that the outer one does not use
@@ -378,16 +378,16 @@ reference MUST be made in `_Borrow.mjs`.
 
 ## 8. Abstract and Concrete
 
-**ABS-1.** A _constructor_ that a _consumer_ is expected to derive from
-MUST be declared _abstract_ through the shared _abstract_ layer. Documenting it
-as _abstract_ in prose MUST NOT be used as a substitute.
+**ABS-1.** A _constructor_ that a _consumer_ outside the _package_ is expected
+to derive from MUST be declared _abstract_ through the shared _abstract_ layer.
+Documenting it as _abstract_ in prose MUST NOT be used as a substitute.
 
 > **Boundary**
-> The question is whether others are expected to build on this _constructor_ or
-> only to use it. If a _consumer_ is expected to _derive_ from it, what the
-> outside is given is the _abstract_ layer, and the _module_ keeps its own
-> _concrete_ choice free to change. If nothing derives from it, the layer
-> carries no promise and the _subject_ is one thing.
+> The question is whether a _consumer_ outside the _package_ is expected to
+> build on this _constructor_ or only to use it. If one is, what the outside is
+> given is the _abstract_ layer, and the _module_ keeps its own _concrete_
+> choice free to change. If nothing outside derives from it, the layer carries
+> no promise and the _subject_ is one thing.
 
 **ABS-2.** Every _abstract member_ MUST declare a contract for what it
 returns, including whether it MAY answer a promise.
