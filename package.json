@@ -29,6 +29,7 @@
     "publish": "lerna publish"
   },
   "workspaces": [
-    "packages/partial-constructor"
+    "packages/partial-constructor",
+    "packages/normalizer"
   ]
 }
