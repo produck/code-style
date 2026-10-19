@@ -30,6 +30,7 @@
   },
   "workspaces": [
     "packages/partial-constructor",
-    "packages/normalizer"
+    "packages/normalizer",
+    "packages/import"
   ]
 }
