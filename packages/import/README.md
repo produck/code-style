@@ -100,8 +100,13 @@ the same way: not divided, and running from the far to the near.
 name from '…'` — unless the module it names states how it is to be imported.
 
 > **Rationale**
-> The namespace keeps the origin attached to every name it brings: a reader who
-> meets `ChunkStash.$I.DROP` at the use site knows whose name it is, and a
-> rename inside the target shows up at the place the name is used. A named
-> import loses that trail — the name arrives bare, and nothing at the use site
-> says where it came from.
+> The namespace form keeps the names a module brings out of the way of the names
+> this module already has: every use is qualified, so two modules may export the
+> same name without either being renamed. A named import puts the name into this
+> module's own scope, and a collision has to be undone by hand.
+
+> **Boundary**
+> The question is whether the target fixes the form. No criterion is given for
+> answering it: the situation decides, and what reads better for the person
+> writing the code comes before consistency between modules. The goal above —
+> no name collides — holds whichever form is chosen.
