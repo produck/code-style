@@ -31,6 +31,7 @@
   "workspaces": [
     "packages/partial-constructor",
     "packages/normalizer",
-    "packages/import"
+    "packages/import",
+    "packages/parser-broadcast"
   ]
 }
